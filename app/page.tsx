@@ -1,18 +1,33 @@
-// frontend/pages/index.js
-import { useState, useCallback } from 'react';
+// app/page.tsx
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 
+type Detection = {
+  object: string;
+  confidence: number;
+  bbox: number[];
+};
+
+type ResultType = {
+  prediction?: string;
+  confidence?: number;
+  detections?: Detection[];
+  message?: string;
+  mask?: string;
+  error?: string;
+};
+
 export default function Home() {
-  // State variables to handle file, preview, results, and UI loading
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [result, setResult] = useState(null);
-  const [activeTab, setActiveTab] = useState('classify');
-  const [loading, setLoading] = useState(false);
+  // State variables with TypeScript types
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<ResultType | null>(null);
+  const [activeTab, setActiveTab] = useState<'classify' | 'detect' | 'segment'>('classify');
+  const [loading, setLoading] = useState<boolean>(false);
 
   // Handle file drop using react-dropzone
-  const onDrop = useCallback((acceptedFiles) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles && acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       setSelectedFile(file);
@@ -33,12 +48,13 @@ export default function Home() {
     try {
       let endpoint = '';
       // Determine which API endpoint to call based on the active tab
-      if (activeTab === 'classify')
+      if (activeTab === 'classify') {
         endpoint = 'http://localhost:8000/predict/classify';
-      else if (activeTab === 'detect')
+      } else if (activeTab === 'detect') {
         endpoint = 'http://localhost:8000/predict/detect';
-      else if (activeTab === 'segment')
+      } else if (activeTab === 'segment') {
         endpoint = 'http://localhost:8000/predict/segment';
+      }
 
       // Call the backend API
       const response = await axios.post(endpoint, formData, {
@@ -46,8 +62,8 @@ export default function Home() {
       });
       setResult(response.data);
     } catch (error) {
-      console.error("Error processing file", error);
-      setResult({ error: "Failed to process file" });
+      console.error('Error processing file', error);
+      setResult({ error: 'Failed to process file' });
     }
     setLoading(false);
   };
@@ -73,7 +89,7 @@ export default function Home() {
       return (
         <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-md">
           <h3 className="text-xl font-bold">Detection Results</h3>
-          {result.detections.map((det, idx) => (
+          {result.detections?.map((det, idx) => (
             <div key={idx} className="border p-2 my-2 rounded">
               <p>
                 Object: <span className="font-semibold">{det.object}</span>
@@ -82,7 +98,7 @@ export default function Home() {
                 Confidence: <span className="font-semibold">{det.confidence}</span>
               </p>
               <p>
-                Bounding Box: <span className="font-semibold">{det.bbox.join(", ")}</span>
+                Bounding Box: <span className="font-semibold">{det.bbox.join(', ')}</span>
               </p>
             </div>
           ))}
@@ -111,7 +127,7 @@ export default function Home() {
 
         {/* Navigation Tabs */}
         <div className="flex justify-around mb-6">
-          {['classify', 'detect', 'segment'].map((tab) => (
+          {(['classify', 'detect', 'segment'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -152,7 +168,7 @@ export default function Home() {
         {preview && (
           <div className="mt-6">
             <h3 className="text-xl font-semibold text-gray-800 mb-3">Preview:</h3>
-            {selectedFile.type.startsWith('image') ? (
+            {selectedFile && selectedFile.type.startsWith('image') ? (
               <img
                 src={preview}
                 alt="Preview"
